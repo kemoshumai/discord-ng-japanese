@@ -11,7 +11,7 @@ pub async fn ng_japanese(http: &twilight_http::Client, _ctx: &Context, msg: &Mes
     }
 
     if is_japanese(&msg.content) {
-        if let Err(err) = http.delete_messages(msg.channel_id, &[msg.id])?.await {
+        if let Err(err) = http.delete_message(msg.channel_id, msg.id).await {
             println!("Error deleting message: {err:?}");
         } else {
             println!("Deleted message: {}", msg.content);
