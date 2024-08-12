@@ -6,11 +6,11 @@ use crate::llm::History;
 
 pub async fn assistant(ctx: &Context, msg: &Message, history: &mut History) -> anyhow::Result<()> {
 
-    let channel_id_ng_japanese = std::env::var("CHANNEL_ID_ASSISTANT").expect("Expected a channel ID in the environment");
-    let channel_id_ng_japanese: u64 = channel_id_ng_japanese.parse().expect("Channel ID is not a number");
+    let channel_id = std::env::var("CHANNEL_ID_ASSISTANT").expect("Expected a channel ID in the environment");
+    let channel_id: u64 = channel_id.parse().expect("Channel ID is not a number");
 
     // アシスタントが返事できるチャンネル以外は無視
-    if msg.channel_id != channel_id_ng_japanese {
+    if msg.channel_id != channel_id {
         return Ok(());
     }
 
