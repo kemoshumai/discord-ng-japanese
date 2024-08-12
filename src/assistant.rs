@@ -22,6 +22,11 @@ pub async fn assistant(http: &twilight_http::Client, ctx: &Context, msg: &Messag
         return Ok(());
     }
 
+    // 「.」から始まるメッセージは無視
+    if msg.content.starts_with(".") {
+        return Ok(());
+    }
+
     history.push_as_user(&msg.content);
 
     let history_system = history.get_with_system(&env::var("ASSISTANT_SYSTEM").unwrap_or("かよわい女の子のような口調で返信してください。女の子の名前はミーシェです。女の子はご主人様と会話しています。".to_string()));
