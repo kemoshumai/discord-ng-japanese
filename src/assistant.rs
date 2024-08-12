@@ -23,9 +23,11 @@ pub async fn assistant(http: &twilight_http::Client, ctx: &Context, msg: &Messag
     }
 
     // 「.」から始まるメッセージは無視
-    if msg.content.starts_with(".") {
+    if msg.content.starts_with('.') {
         return Ok(());
     }
+
+    http.create_typing_trigger(msg.channel_id).await?;
 
     history.push_as_user(&msg.content);
 
