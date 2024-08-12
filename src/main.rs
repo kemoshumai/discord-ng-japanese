@@ -5,6 +5,7 @@ use serenity::model::channel::Message;
 use serenity::prelude::*;
 
 mod ng_japanese;
+mod llm;
 
 struct Handler;
 
