@@ -1,6 +1,7 @@
-use std::env;
+use std::{env, sync::Arc};
 
-use twilight_model::id::Id;
+use twilight_model::{http::interaction::{InteractionResponse, InteractionResponseData, InteractionResponseType}, id::Id};
+use vesper::{macros::command, prelude::{DefaultCommandResult, SlashContext}};
 
 use crate::{Context, Message};
 
@@ -30,6 +31,28 @@ pub async fn assistant(http: &twilight_http::Client, ctx: &Context, msg: &Messag
     let _ = http.create_message(Id::new(channel_id)).content(&response)?.await;
 
     history.push_as_assistant(&response);
+
+    Ok(())
+}
+
+
+#[command]
+#[description = "アシスタントとの会話をリセットする"]
+pub async fn reset(ctx: &mut SlashContext<Arc<Context>>) -> DefaultCommandResult {
+    ctx.interaction_client.create_response(
+        ctx.interaction.id,
+        &ctx.interaction.token,
+        &InteractionResponse {
+            kind: InteractionResponseType::ChannelMessageWithSource,
+            data: Some(InteractionResponseData {
+                content: Some("（会話がリセットされました）".to_string()),
+                ..Default::default()
+            })
+        }
+    ).await?;
+
+    let mut history = ctx.data.history.lock().await;
+    history.clear();
 
     Ok(())
 }

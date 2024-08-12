@@ -62,8 +62,9 @@ async fn handle_event(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let application_id = Id::new(env::var("APPLICATION_ID")?.parse()?);
-    let framework = Arc::new(Framework::builder(http.clone(), application_id, ())
+    let framework = Arc::new(Framework::builder(http.clone(), application_id, context.clone())
         .command(ping::ping)
+        .command(assistant::reset)
         .build()
     );
 
