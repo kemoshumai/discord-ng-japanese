@@ -1,5 +1,6 @@
-use std::{env, sync::{Arc, Mutex}};
+use std::{env, sync::Arc};
 
+use tokio::sync::Mutex;
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::{Event, Intents, Shard, ShardId};
 use twilight_model::gateway::payload::incoming::MessageCreate;
@@ -7,6 +8,7 @@ use twilight_model::gateway::payload::incoming::MessageCreate;
 mod ng_japanese;
 mod llm;
 mod assistant;
+mod ping;
 
 pub type Message = Box<MessageCreate>;
 pub struct Context{
@@ -16,6 +18,8 @@ pub struct Context{
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+
+    dotenv::dotenv().ok();
 
     tracing_subscriber::fmt::init();
 
@@ -46,7 +50,7 @@ async fn main() -> anyhow::Result<()> {
         // Update the cache with the event.
         cache.update(&event);
 
-        tokio::spawn(handle_event(event, Arc::clone(&http), context.clone()));
+        tokio::spawn(handle_event(event, Arc::clone(&http), Arc::clone(&context)));
     }
 }
 
@@ -55,13 +59,12 @@ async fn handle_event(
     http: Arc<twilight_http::Client>,
     context: Arc<Context>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    match event {
-        Event::MessageCreate(msg) => {
+    if let Event::MessageCreate(msg) = event {
 
-            ng_japanese::ng_japanese(&http, &context, &msg).await;
+        ping::ping(&http, &context, &msg).await?;
+        ng_japanese::ng_japanese(&http, &context, &msg).await?;
+        assistant::assistant(&http, &context, &msg).await?;
 
-        }
-        _ => {}
     }
 
     Ok(())

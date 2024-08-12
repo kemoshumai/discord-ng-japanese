@@ -2,9 +2,11 @@ use std::env;
 
 use twilight_model::id::Id;
 
-use crate::{llm::History, Context, Message};
+use crate::{Context, Message};
 
-pub async fn assistant(http: &twilight_http::Client, ctx: &Context, msg: &Message, history: &mut History) -> anyhow::Result<()> {
+pub async fn assistant(http: &twilight_http::Client, ctx: &Context, msg: &Message) -> anyhow::Result<()> {
+
+    let mut history = ctx.histoy.lock().await;
 
     let channel_id = std::env::var("CHANNEL_ID_ASSISTANT").expect("Expected a channel ID in the environment");
     let channel_id: u64 = channel_id.parse().expect("Channel ID is not a number");
@@ -25,7 +27,7 @@ pub async fn assistant(http: &twilight_http::Client, ctx: &Context, msg: &Messag
 
     let response = history_system.request(&env::var("ASSISTANT_MODEL").unwrap_or("gpt-4o".to_string())).await?;
 
-    http.create_message(Id::new(channel_id)).content(&response)?;
+    let _ = http.create_message(Id::new(channel_id)).content(&response)?.await;
 
     history.push_as_assistant(&response);
 
