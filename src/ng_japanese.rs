@@ -14,11 +14,7 @@ pub async fn ng_japanese(ctx: Context, msg: Message) {
         return;
     }
 
-    // 日本語を含むメッセージを削除
-
-    let is_japanese = chat_once(&env::var("NG_JAPANESE_MODEL").unwrap_or("gpt-4o-mini".to_string()), format!("この文章は日本語で書かれていますか？なお、アルファベットで書かれた日本語の文章などはYesと答え、日本語を含む英語の文章はNoと答えてください。「Yes」か「No」かで答えてください。\n\n{}", msg.content).as_str()).await.unwrap() == "Yes";
-
-    if is_japanese {
+    if is_japanese(&msg.content) {
         if let Err(err) = msg.delete(&ctx.http).await {
             println!("Error deleting message: {err:?}");
         } else {
@@ -26,4 +22,13 @@ pub async fn ng_japanese(ctx: Context, msg: Message) {
         }
     }
 
+}
+
+
+fn is_japanese(text: &str) -> bool {
+    // 日本語の文字が含まれているかどうかを判定
+    text.chars().any(|c| {
+        let c = c as u32;
+        (0x3040..=0x30FF).contains(&c) || (0x3400..=0x4DBF).contains(&c) || (0x4E00..=0x9FFF).contains(&c) || (0xF900..=0xFAFF).contains(&c) || (0xFF66..=0xFF9F).contains(&c)
+    })
 }
