@@ -92,4 +92,16 @@ impl History {
         Ok(response_in_text)
     }
 
+    pub async fn rollup(&mut self, n: u8) -> Result<()> {
+        if n == 0 {
+            self.clear();
+            return Ok(());
+        }
+        let mut history = self.clone();
+        let len = history.0.len();
+        let start = len - len / n as usize;
+        history.0 = history.0[start..].to_vec();
+        Ok(())
+    }
+
 }

@@ -65,6 +65,7 @@ async fn handle_event(
     let framework = Arc::new(Framework::builder(http.clone(), application_id, context.clone())
         .command(ping::ping)
         .command(assistant::reset)
+        .command(assistant::rollup)
         .build()
     );
 

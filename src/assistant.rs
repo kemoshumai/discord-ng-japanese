@@ -56,3 +56,27 @@ pub async fn reset(ctx: &mut SlashContext<Arc<Context>>) -> DefaultCommandResult
 
     Ok(())
 }
+
+#[command]
+#[description = "新しい会話のn割を残して会話をリセットする"]
+pub async fn rollup(ctx: &mut SlashContext<Arc<Context>>,
+    #[description = "何割を残すか"] n: u8
+) -> DefaultCommandResult {
+
+    ctx.interaction_client.create_response(
+        ctx.interaction.id,
+        &ctx.interaction.token,
+        &InteractionResponse {
+            kind: InteractionResponseType::ChannelMessageWithSource,
+            data: Some(InteractionResponseData {
+                content: Some(format!("（{}割がリセットされました）", n).to_string()),
+                ..Default::default()
+            })
+        }
+    ).await?;
+
+    let mut history = ctx.data.history.lock().await;
+    history.rollup(n).await?;
+
+    Ok(())
+}
