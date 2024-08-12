@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_openai::types::{ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage, ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct History(Vec<ChatCompletionRequestMessage>);
 
 impl History {
