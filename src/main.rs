@@ -3,7 +3,8 @@ use std::{env, sync::Arc};
 use tokio::sync::Mutex;
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::{Event, Intents, Shard, ShardId};
-use twilight_model::gateway::payload::incoming::MessageCreate;
+use twilight_model::{gateway::payload::incoming::MessageCreate, id::Id};
+use vesper::prelude::Framework;
 
 mod ng_japanese;
 mod llm;
@@ -59,12 +60,31 @@ async fn handle_event(
     http: Arc<twilight_http::Client>,
     context: Arc<Context>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    if let Event::MessageCreate(msg) = event {
 
-        ping::ping(&http, &context, &msg).await?;
-        ng_japanese::ng_japanese(&http, &context, &msg).await?;
-        assistant::assistant(&http, &context, &msg).await?;
+    let application_id = Id::new(env::var("APPLICATION_ID")?.parse()?);
+    let framework = Arc::new(Framework::builder(http.clone(), application_id, ())
+        .command(ping::ping)
+        .build()
+    );
 
+    framework.register_guild_commands(Id::new(env::var("GUILD_ID")?.parse()?)).await?;
+
+    match event {
+        Event::MessageCreate(msg) => {
+
+            ping::ping_message(&http, &context, &msg).await?;
+            ng_japanese::ng_japanese(&http, &context, &msg).await?;
+            assistant::assistant(&http, &context, &msg).await?;
+
+        },
+        Event::InteractionCreate(i) => {
+            let clone = Arc::clone(&framework);
+            tokio::spawn(async move {
+                let inner = i.0;
+                clone.process(inner).await;
+            });
+        },
+        _ => (),
     }
 
     Ok(())
