@@ -1,6 +1,6 @@
-use serenity::all::{Context, Message};
+use crate::{Context, Message};
 
-pub async fn ng_japanese(ctx: &Context, msg: &Message) {
+pub async fn ng_japanese(http: &twilight_http::Client, ctx: &Context, msg: &Message) {
 
     let channel_id_ng_japanese = std::env::var("CHANNEL_ID_NG_JAPANESE").expect("Expected a channel ID in the environment");
     let channel_id_ng_japanese: u64 = channel_id_ng_japanese.parse().expect("Channel ID is not a number");
@@ -11,7 +11,7 @@ pub async fn ng_japanese(ctx: &Context, msg: &Message) {
     }
 
     if is_japanese(&msg.content) {
-        if let Err(err) = msg.delete(&ctx.http).await {
+        if let Err(err) = http.delete_messages(msg.channel_id, &[msg.id]) {
             println!("Error deleting message: {err:?}");
         } else {
             println!("Deleted message: {}", msg.content);

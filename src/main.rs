@@ -1,59 +1,68 @@
-use std::env;
-use std::sync::Arc;
+use std::{env, sync::{Arc, Mutex}};
 
-use llm::History;
-use serenity::async_trait;
-use serenity::model::channel::Message;
-use serenity::prelude::*;
+use twilight_cache_inmemory::InMemoryCache;
+use twilight_gateway::{Event, Intents, Shard, ShardId};
+use twilight_model::gateway::payload::incoming::MessageCreate;
 
 mod ng_japanese;
 mod llm;
 mod assistant;
 
-struct Handler;
-
-impl TypeMapKey for History {
-    type Value = Arc<Mutex<History>>;
+pub type Message = Box<MessageCreate>;
+pub struct Context{
+    pub histoy: Arc<Mutex<llm::History>>
 }
 
-#[async_trait]
-impl EventHandler for Handler {
-    async fn message(&self, ctx: Context, msg: Message) {
-        ng_japanese::ng_japanese(&ctx, &msg).await;
-
-        {
-            let history = {
-                let data = ctx.data.read().await;
-                data.get::<llm::History>().unwrap().clone()
-            };
-            let mut history = history.lock().await;
-            let _ = assistant::assistant(&ctx, &msg, &mut history).await;
-        }
-    }
-}
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
 
-    dotenv::dotenv().expect("Failed to read .env file");
+    tracing_subscriber::fmt::init();
 
-    // Login with a bot token from the environment
-    let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
-    // Set gateway intents, which decides what events the bot will be notified about
-    let intents = GatewayIntents::GUILD_MESSAGES
-        | GatewayIntents::DIRECT_MESSAGES
-        | GatewayIntents::MESSAGE_CONTENT;
+    let token = env::var("DISCORD_TOKEN")?;
 
-    // Create a new instance of the Client, logging in as a bot.
-    let mut client = Client::builder(&token, intents).event_handler(Handler).await.expect("Err creating client");
+    let mut shard = Shard::new(
+        ShardId::ONE,
+        token.clone(),
+        Intents::GUILD_MESSAGES | Intents::MESSAGE_CONTENT,
+    );
 
-    {
-        let mut data = client.data.write().await;
-        data.insert::<llm::History>(Arc::new(Mutex::new(History::new())));
+    let http = Arc::new(twilight_http::Client::new(token));
+
+    let cache = InMemoryCache::builder().message_cache_size(10).build();
+
+    let context = Arc::new(Context {
+        histoy: Arc::new(Mutex::new(llm::History::new())),
+    });
+
+    // Process each event as they come in.
+    loop{
+        let item = shard.next_event().await;
+        let Ok(event) = item else {
+            tracing::warn!(source = ?item.unwrap_err(), "error receiving event");
+            continue;
+        };
+
+        // Update the cache with the event.
+        cache.update(&event);
+
+        tokio::spawn(handle_event(event, Arc::clone(&http), context.clone()));
+    }
+}
+
+async fn handle_event(
+    event: Event,
+    http: Arc<twilight_http::Client>,
+    context: Arc<Context>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    match event {
+        Event::MessageCreate(msg) => {
+
+            ng_japanese::ng_japanese(&http, &context, &msg).await;
+
+        }
+        _ => {}
     }
 
-    // Start listening for events by starting a single shard
-    if let Err(why) = client.start().await {
-        println!("Client error: {why:?}");
-    }
+    Ok(())
 }
