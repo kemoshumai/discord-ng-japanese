@@ -1,8 +1,4 @@
-use std::env;
-
 use serenity::all::{Context, Message};
-
-use crate::llm::chat_once;
 
 pub async fn ng_japanese(ctx: Context, msg: Message) {
 
