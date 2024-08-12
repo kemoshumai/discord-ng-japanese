@@ -40,6 +40,16 @@ async fn main() -> anyhow::Result<()> {
         history: Arc::new(Mutex::new(llm::History::new())),
     });
 
+    let application_id = Id::new(env::var("APPLICATION_ID")?.parse()?);
+    let framework = Arc::new(Framework::builder(http.clone(), application_id, context.clone())
+        .command(ping::ping)
+        .command(assistant::reset)
+        .command(assistant::rollup)
+        .build()
+    );
+    framework.register_guild_commands(Id::new(env::var("GUILD_ID")?.parse()?)).await?;
+
+
     // Process each event as they come in.
     loop{
         let item = shard.next_event().await;
@@ -51,7 +61,7 @@ async fn main() -> anyhow::Result<()> {
         // Update the cache with the event.
         cache.update(&event);
 
-        tokio::spawn(handle_event(event, Arc::clone(&http), Arc::clone(&context)));
+        tokio::spawn(handle_event(event, Arc::clone(&http), Arc::clone(&context), Arc::clone(&framework)));
     }
 }
 
@@ -59,17 +69,8 @@ async fn handle_event(
     event: Event,
     http: Arc<twilight_http::Client>,
     context: Arc<Context>,
+    framework: Arc<Framework<Arc<Context>>>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-
-    let application_id = Id::new(env::var("APPLICATION_ID")?.parse()?);
-    let framework = Arc::new(Framework::builder(http.clone(), application_id, context.clone())
-        .command(ping::ping)
-        .command(assistant::reset)
-        .command(assistant::rollup)
-        .build()
-    );
-
-    framework.register_guild_commands(Id::new(env::var("GUILD_ID")?.parse()?)).await?;
 
     match event {
         Event::MessageCreate(msg) => {
@@ -80,10 +81,9 @@ async fn handle_event(
 
         },
         Event::InteractionCreate(i) => {
-            let clone = Arc::clone(&framework);
             tokio::spawn(async move {
                 let inner = i.0;
-                clone.process(inner).await;
+                framework.process(inner).await;
             });
         },
         _ => (),
