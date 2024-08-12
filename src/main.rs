@@ -10,6 +10,7 @@ mod ng_japanese;
 mod llm;
 mod assistant;
 mod ping;
+mod slot;
 
 pub type Message = Box<MessageCreate>;
 pub struct Context{
@@ -45,6 +46,7 @@ async fn main() -> anyhow::Result<()> {
         .command(ping::ping)
         .command(assistant::reset)
         .command(assistant::rollup)
+        .command(slot::kemoshumai_slot)
         .build()
     );
     framework.register_guild_commands(Id::new(env::var("GUILD_ID")?.parse()?)).await?;
