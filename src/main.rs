@@ -12,7 +12,7 @@ mod ping;
 
 pub type Message = Box<MessageCreate>;
 pub struct Context{
-    pub histoy: Arc<Mutex<llm::History>>
+    pub history: Arc<Mutex<llm::History>>
 }
 
 
@@ -36,7 +36,7 @@ async fn main() -> anyhow::Result<()> {
     let cache = InMemoryCache::builder().message_cache_size(10).build();
 
     let context = Arc::new(Context {
-        histoy: Arc::new(Mutex::new(llm::History::new())),
+        history: Arc::new(Mutex::new(llm::History::new())),
     });
 
     // Process each event as they come in.
