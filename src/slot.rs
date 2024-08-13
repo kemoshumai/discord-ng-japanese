@@ -18,7 +18,7 @@ pub async fn kemoshumai_slot(ctx: &mut SlashContext<Arc<Context>>) -> DefaultCom
         &InteractionResponse {
             kind: InteractionResponseType::ChannelMessageWithSource,
             data: Some(InteractionResponseData {
-                content: Some(kemoshumai),
+                content: Some(format!("「{}」です！", kemoshumai).to_string()),
                 ..Default::default()
             })
         }
