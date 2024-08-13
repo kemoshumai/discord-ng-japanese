@@ -11,6 +11,7 @@ mod llm;
 mod assistant;
 mod ping;
 mod slot;
+mod dice;
 
 pub type Message = Box<MessageCreate>;
 pub struct Context{
@@ -47,6 +48,7 @@ async fn main() -> anyhow::Result<()> {
         .command(assistant::reset)
         .command(assistant::rollup)
         .command(slot::kemoshumai_slot)
+        .command(dice::dice)
         .build()
     );
     framework.register_guild_commands(Id::new(env::var("GUILD_ID")?.parse()?)).await?;
