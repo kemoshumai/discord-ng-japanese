@@ -49,6 +49,7 @@ async fn main() -> anyhow::Result<()> {
         .command(assistant::rollup)
         .command(slot::kemoshumai_slot)
         .command(dice::dice)
+        .command(dice::random)
         .build()
     );
     framework.register_guild_commands(Id::new(env::var("GUILD_ID")?.parse()?)).await?;

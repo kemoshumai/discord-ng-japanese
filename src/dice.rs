@@ -29,3 +29,28 @@ pub async fn dice(ctx: &mut SlashContext<Arc<Context>>,
 
     Ok(())
 }
+
+
+#[command]
+#[description = "ランダムに選択する"]
+pub async fn random(ctx: &mut SlashContext<Arc<Context>>,
+    #[description = "選択肢（コンマ区切り）"] elements_separated_by_comma: String
+) -> DefaultCommandResult {
+
+    let elements: Vec<&str> = elements_separated_by_comma.split(',').collect();
+    let n = rand::thread_rng().gen_range(0..elements.len());
+
+    ctx.interaction_client.create_response(
+        ctx.interaction.id,
+        &ctx.interaction.token,
+        &InteractionResponse {
+            kind: InteractionResponseType::ChannelMessageWithSource,
+            data: Some(InteractionResponseData {
+                content: Some(format!("{}です！", elements[n]).to_string()),
+                ..Default::default()
+            })
+        }
+    ).await?;
+
+    Ok(())
+}
