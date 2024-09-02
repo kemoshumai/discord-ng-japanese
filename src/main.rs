@@ -1,5 +1,6 @@
-use std::{env, sync::Arc};
+use std::{collections::HashMap, env, sync::Arc};
 
+use songbird::{shards::TwilightMap, Songbird};
 use tokio::sync::Mutex;
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::{Event, Intents, Shard, ShardId};
@@ -15,7 +16,8 @@ mod dice;
 
 pub type Message = Box<MessageCreate>;
 pub struct Context{
-    pub history: Arc<Mutex<llm::History>>
+    pub history: Arc<Mutex<llm::History>>,
+    pub songbird: Arc<Songbird>,
 }
 
 
@@ -34,12 +36,24 @@ async fn main() -> anyhow::Result<()> {
         Intents::GUILD_MESSAGES | Intents::MESSAGE_CONTENT,
     );
 
-    let http = Arc::new(twilight_http::Client::new(token));
+    let http = twilight_http::Client::new(token);
+    let user_id = http.current_user().await?.model().await?.id;
+    let http = Arc::new(http);
 
     let cache = InMemoryCache::builder().message_cache_size(10).build();
 
+    let shard_hashmap = {
+        let mut map = HashMap::new();
+        map.insert(shard.id().number(),shard.sender());
+        map
+    };
+
+    let songbird = Songbird::twilight(Arc::new(TwilightMap::new(shard_hashmap)), user_id);
+    let songbird = Arc::new(songbird);
+
     let context = Arc::new(Context {
         history: Arc::new(Mutex::new(llm::History::new())),
+        songbird: Arc::clone(&songbird),
     });
 
     let application_id = Id::new(env::var("APPLICATION_ID")?.parse()?);
@@ -54,7 +68,6 @@ async fn main() -> anyhow::Result<()> {
     );
     framework.register_guild_commands(Id::new(env::var("GUILD_ID")?.parse()?)).await?;
 
-
     // Process each event as they come in.
     loop{
         let item = shard.next_event().await;
@@ -62,6 +75,9 @@ async fn main() -> anyhow::Result<()> {
             tracing::warn!(source = ?item.unwrap_err(), "error receiving event");
             continue;
         };
+
+        // Songbirdのイベントを処理
+        songbird.process(&event).await;
 
         // Update the cache with the event.
         cache.update(&event);
