@@ -148,14 +148,14 @@ impl EventHandler for Receiver {
 
                             }
 
-                            // 2秒後に同じ人がしゃべっていなかった場合、voskに音声データを渡す
+                            // 2秒後に同じ人がしゃべっていなかった場合、Whisperに音声データを渡す
                             println!("{}: {}s", user_id, wav.len() / (2 * 48000));
 
                             // 奇数番目だけ採用し、wavをモノラルに変換
                             let wav_mono: Vec<i16> = wav.into_iter().enumerate().filter_map(|(i, x)| if i % 2 == 0 { Some(x) } else { None }).collect();
 
-                            // voskで音声認識
-                            let recognized_text = vosk(&wav_mono).unwrap();
+                            // 音声認識
+                            let recognized_text = speech_to_text(&wav_mono).unwrap();
 
                             println!("{}: {}", user_id, recognized_text);
 
@@ -183,7 +183,7 @@ impl ReceiverContext {
     }
 }
 
-fn vosk(wav_48khz_1ch: &[i16]) -> anyhow::Result<String> {
+fn speech_to_text(wav_48khz_1ch: &[i16]) -> anyhow::Result<String> {
 
     Ok("".to_string())
 }
