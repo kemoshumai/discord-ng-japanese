@@ -127,11 +127,11 @@ impl EventHandler for Receiver {
 
                         tokio::spawn(async move{
 
-                            // 2秒後に同じ人がしゃべっていたら、それを結合する
-                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                            // 指定秒後に同じ人がしゃべっていたら、それを結合する
+                            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
                             let mut wav_by_user = wav_by_user.lock().unwrap();
 
-                            // removeしたはずなのに、2秒後に存在しているということは、2秒後の現在、続けて同じ人がしゃべっているということ。
+                            // removeしたはずなのに、指定秒後に存在しているということは、指定秒後の現在、続けて同じ人がしゃべっているということ。
                             if wav_by_user.contains_key(&user_id) {
                                 
                                 let wav_now_recording = wav_by_user.get(&user_id).unwrap();
@@ -150,7 +150,7 @@ impl EventHandler for Receiver {
 
                             }
 
-                            // 2秒後に同じ人がしゃべっていなかった場合、Whisperに音声データを渡す
+                            // 指定秒後に同じ人がしゃべっていなかった場合、Whisperに音声データを渡す
                             println!("{}: {}s", user_id, wav.len() / (2 * 48000));
 
                             // 奇数番目だけ採用し、wavをモノラルに変換
@@ -159,7 +159,11 @@ impl EventHandler for Receiver {
                             // 音声認識
                             tokio::spawn(async move {
                                 let recognized_text = speech_to_text(&wav_mono).await.unwrap();
+                                
                                 println!("{}: {}", user_id, recognized_text);
+
+
+
                             });
                             
 
