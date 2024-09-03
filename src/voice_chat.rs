@@ -103,14 +103,65 @@ impl EventHandler for Receiver {
                     }
                 }
 
-                tick.silent.iter().for_each(|user_id| {
+
+                // しゃべっていないユーザーに対して
+                for user_id in tick.silent.iter() {
+                    
                     let mut wav_by_user = receiver_context.wav_by_user.lock().unwrap();
+                    
                     if wav_by_user.contains_key(user_id) {
-                        let wav = wav_by_user.get(user_id).unwrap();
-                        println!("{}: {}s", user_id, wav.len() / (2 * 48000));
+
+                        // もし現在しゃべっていないユーザーの音声データがあれば、それを取り出す
+
+                        let wav = wav_by_user.get(user_id).unwrap().clone();
                         wav_by_user.remove(user_id);
+
+                        // tokioに渡す前にwav_by_userのロックを解放
+                        std::mem::drop(wav_by_user);
+
+                        // tokioに渡す
+                        let wav_by_user = receiver_context.wav_by_user.clone();
+                        let user_id = *user_id;
+
+                        tokio::spawn(async move{
+
+                            // 2秒後に同じ人がしゃべっていたら、それを結合する
+                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                            let mut wav_by_user = wav_by_user.lock().unwrap();
+
+                            // removeしたはずなのに、2秒後に存在しているということは、2秒後の現在、続けて同じ人がしゃべっているということ。
+                            if wav_by_user.contains_key(&user_id) {
+                                
+                                let wav_now_recording = wav_by_user.get(&user_id).unwrap();
+                                let wav_already_recorded = wav;
+
+                                // 2つの音声データを結合
+                                let mut wav = vec![];
+                                wav.extend(wav_already_recorded);
+                                wav.extend(wav_now_recording);
+
+                                // 録音中の音声データに上書き
+                                wav_by_user.insert(user_id, wav);
+
+                                // それ以降の処理は中断
+                                return;
+
+                            }
+
+                            // 2秒後に同じ人がしゃべっていなかった場合、voskに音声データを渡す
+                            println!("{}: {}s", user_id, wav.len() / (2 * 48000));
+
+                            // 奇数番目だけ採用し、wavをモノラルに変換
+                            let wav_mono: Vec<i16> = wav.into_iter().enumerate().filter_map(|(i, x)| if i % 2 == 0 { Some(x) } else { None }).collect();
+
+                            // voskで音声認識
+                            let recognized_text = vosk(&wav_mono).unwrap();
+
+                            println!("{}: {}", user_id, recognized_text);
+
+                        });
                     }
-                });
+                }
             }
             _ => {}
         }
@@ -130,4 +181,9 @@ impl ReceiverContext {
             wav_by_user: Arc::new(Mutex::new(HashMap::new())),
         }
     }
+}
+
+fn vosk(wav_48khz_1ch: &[i16]) -> anyhow::Result<String> {
+
+    Ok("".to_string())
 }
