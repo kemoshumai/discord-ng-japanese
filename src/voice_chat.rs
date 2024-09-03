@@ -1,7 +1,6 @@
 use std::{collections::HashMap, io::Cursor, num::NonZeroU64, sync::{Arc, Mutex}};
 
 use reqwest::{header, multipart::Form};
-use serde::{Deserialize, Serialize};
 use songbird::{CoreEvent, EventContext, EventHandler};
 use twilight_model::http::interaction::{InteractionResponse, InteractionResponseData, InteractionResponseType};
 use vesper::{macros::command, prelude::{async_trait, DefaultCommandResult, SlashContext}};
