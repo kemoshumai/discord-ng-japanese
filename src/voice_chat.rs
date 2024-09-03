@@ -1,6 +1,6 @@
 use std::{collections::HashMap, io::Cursor, num::NonZeroU64, sync::{Arc, Mutex}};
 
-use reqwest::multipart::Form;
+use reqwest::{header, multipart::Form};
 use serde::{Deserialize, Serialize};
 use songbird::{CoreEvent, EventContext, EventHandler};
 use twilight_model::http::interaction::{InteractionResponse, InteractionResponseData, InteractionResponseType};
@@ -193,20 +193,23 @@ async fn speech_to_text(wav_48khz_1ch: &[i16]) -> anyhow::Result<String> {
 
     let wavdata = make_wav_file(wav_48khz_1ch)?;
 
-    let multipart = Form::new();
-    let multipart = multipart.part("file", reqwest::multipart::Part::bytes(wavdata).file_name("audio.wav"));
-    let multipart = multipart.part("model", reqwest::multipart::Part::text("whisper-1"));
+    let multipart = Form::new()
+        .text("model", "whisper-1")
+        .text("response_format", "text")
+        .part("file", reqwest::multipart::Part::bytes(wavdata).file_name("audio.wav"));
+
+    let mut headers = header::HeaderMap::new();
+    headers.insert("Authorization", ["Bearer ", &std::env::var("OPENAI_API_KEY")?].concat().parse()?);
 
     let response = client.post("https://api.openai.com/v1/audio/transcriptions")
-        .header("Authorization", format!("Bearer {}", std::env::var("OPENAI_API_KEY")?))
-        .header("Content-Type", "multipart/form-data")
+        .headers(headers)
         .multipart(multipart)
         .send()
         .await?;
 
-    let response: TranscriptionResponse = response.json().await?;
+    let response_in_text = response.text().await?;
 
-    Ok(response.text)
+    Ok(response_in_text)
 }
 
 fn make_wav_file(wav_48khz_1ch: &[i16]) -> anyhow::Result<Vec<u8>> {
@@ -232,10 +235,4 @@ fn make_wav_file(wav_48khz_1ch: &[i16]) -> anyhow::Result<Vec<u8>> {
     }
 
     Ok(buffer)
-}
-
-
-#[derive(Deserialize)]
-struct TranscriptionResponse {
-    text: String,
 }
