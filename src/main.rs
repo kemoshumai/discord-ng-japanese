@@ -34,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
     let mut shard = Shard::new(
         ShardId::ONE,
         token.clone(),
-        Intents::GUILD_MESSAGES | Intents::MESSAGE_CONTENT,
+        Intents::GUILD_MESSAGES | Intents::MESSAGE_CONTENT | Intents::GUILD_VOICE_STATES,
     );
 
     let http = twilight_http::Client::new(token);
@@ -95,6 +95,13 @@ async fn handle_event(
     context: Arc<Context>,
     framework: Arc<Framework<Arc<Context>>>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+
+
+    let songbird = Arc::clone(&context.songbird);
+    let e = event.clone();
+    tokio::spawn(async move {
+        songbird.process(&e).await;
+    });
 
     match event {
         Event::MessageCreate(msg) => {

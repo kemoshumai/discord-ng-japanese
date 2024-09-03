@@ -8,7 +8,7 @@ anyhow = "1.0.86"
 async-openai = "0.23.4"
 dotenv = "0.15.0"
 rand = "0.8.5"
-songbird = { version = "0.4.3", features = ["driver", "gateway", "twilight", "rustls"] }
+songbird = { version = "0.4.3", features = ["driver", "gateway", "twilight", "rustls","receive"] }
 tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
