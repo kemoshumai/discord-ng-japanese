@@ -1,6 +1,6 @@
 use std::{collections::HashMap, env, sync::Arc};
 
-use songbird::{shards::TwilightMap, Songbird};
+use songbird::{shards::TwilightMap, Config, Songbird};
 use tokio::sync::Mutex;
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::{Event, Intents, Shard, ShardId};
@@ -49,7 +49,10 @@ async fn main() -> anyhow::Result<()> {
         map
     };
 
+    let songbird_config = Config::default().decode_mode(songbird::driver::DecodeMode::Decode);
+
     let songbird = Songbird::twilight(Arc::new(TwilightMap::new(shard_hashmap)), user_id);
+    songbird.set_config(songbird_config);
     let songbird = Arc::new(songbird);
 
     let context = Arc::new(Context {
