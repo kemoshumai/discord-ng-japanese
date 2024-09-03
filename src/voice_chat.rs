@@ -1,12 +1,11 @@
 use std::{collections::HashMap, io::Cursor, num::NonZeroU64, sync::{Arc, Mutex}};
 
 use reqwest::{header, multipart::Form};
-use songbird::{CoreEvent, EventContext, EventHandler};
-use twilight_http::response;
+use songbird::{id::GuildId, CoreEvent, EventContext, EventHandler};
 use twilight_model::http::interaction::{InteractionResponse, InteractionResponseData, InteractionResponseType};
 use vesper::{macros::command, prelude::{async_trait, DefaultCommandResult, SlashContext}};
 
-use crate::{assistant, Context};
+use crate::Context;
 
 #[command]
 #[description = "ボイスチャンネルに招待する"]
@@ -41,7 +40,7 @@ pub async fn join(ctx: &mut SlashContext<Arc<Context>>) -> DefaultCommandResult 
         };
         let mut handler = call.lock().await;
     
-        let receiver = Receiver::new();
+        let receiver = Receiver::new(songbird);
 
         handler.add_global_event(CoreEvent::SpeakingStateUpdate.into(), receiver.clone());
         handler.add_global_event(CoreEvent::VoiceTick.into(), receiver.clone());
@@ -78,9 +77,9 @@ struct Receiver{
 }
 
 impl Receiver {
-    fn new() -> Self {
+    fn new(songbird: Arc<songbird::Songbird>) -> Self {
         Self {
-            inner: Arc::new(ReceiverContext::new())
+            inner: Arc::new(ReceiverContext::new(songbird))
         }
     }
 }
@@ -125,6 +124,7 @@ impl EventHandler for Receiver {
                         let wav_by_user = receiver_context.wav_by_user.clone();
                         let user_id = *user_id;
                         let assistant_history = receiver_context.assistant_history.clone();
+                        let songbird = receiver_context.songbird.clone();
 
                         tokio::spawn(async move{
 
@@ -178,6 +178,16 @@ impl EventHandler for Receiver {
 
                                 let response_wav = text_to_speech(&response).await.unwrap();
 
+                                let guild_id: NonZeroU64 = std::env::var("GUILD_ID").expect("Expected a guild ID in the environment").parse().expect("Guild ID is not a number");
+                                let guild_id = GuildId::from(guild_id);
+                                let call = songbird.get(guild_id).unwrap();
+                                {
+                                    let mut call = call.lock().await;
+
+                                    let audio = response_wav.into();
+                                    call.play_input(audio);
+                                }
+
                             });
                             
 
@@ -196,13 +206,15 @@ impl EventHandler for Receiver {
 struct ReceiverContext {
     wav_by_user: Arc<Mutex<HashMap<u32, Vec<i16>>>>,
     assistant_history: Arc<Mutex<crate::llm::History>>,
+    songbird: Arc<songbird::Songbird>,
 }
 
 impl ReceiverContext {
-    fn new() -> Self {
+    fn new(songbird: Arc<songbird::Songbird>) -> Self {
         Self {
             wav_by_user: Arc::new(Mutex::new(HashMap::new())),
             assistant_history: Arc::new(Mutex::new(crate::llm::History::new())),
+            songbird
         }
     }
 }

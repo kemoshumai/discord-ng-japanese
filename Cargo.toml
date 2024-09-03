@@ -21,3 +21,7 @@ twilight-gateway = "0.15.4"
 twilight-http = "0.15.4"
 twilight-model = "0.15.4"
 vesper = "0.13.0"
+
+[dependencies.symphonia]
+version = "0.5.2"
+features = ["wav"]
