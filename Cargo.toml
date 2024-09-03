@@ -7,7 +7,11 @@ edition = "2021"
 anyhow = "1.0.86"
 async-openai = "0.23.4"
 dotenv = "0.15.0"
+hound = "3.5.1"
 rand = "0.8.5"
+reqwest = { version = "0.12.7", features = ["multipart"] }
+serde = { version = "1.0.209", features = ["derive"] }
+serde_json = { version = "1.0.127" }
 songbird = { version = "0.4.3", features = ["driver", "gateway", "twilight", "rustls","receive"] }
 tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.40"

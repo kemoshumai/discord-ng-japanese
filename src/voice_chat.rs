@@ -1,5 +1,7 @@
-use std::{collections::HashMap, num::NonZeroU64, sync::{Arc, Mutex}};
+use std::{collections::HashMap, io::Cursor, num::NonZeroU64, sync::{Arc, Mutex}};
 
+use reqwest::multipart::Form;
+use serde::{Deserialize, Serialize};
 use songbird::{CoreEvent, EventContext, EventHandler};
 use twilight_model::http::interaction::{InteractionResponse, InteractionResponseData, InteractionResponseType};
 use vesper::{macros::command, prelude::{async_trait, DefaultCommandResult, SlashContext}};
@@ -155,9 +157,11 @@ impl EventHandler for Receiver {
                             let wav_mono: Vec<i16> = wav.into_iter().enumerate().filter_map(|(i, x)| if i % 2 == 0 { Some(x) } else { None }).collect();
 
                             // 音声認識
-                            let recognized_text = speech_to_text(&wav_mono).unwrap();
-
-                            println!("{}: {}", user_id, recognized_text);
+                            tokio::spawn(async move {
+                                let recognized_text = speech_to_text(&wav_mono).await.unwrap();
+                                println!("{}: {}", user_id, recognized_text);
+                            });
+                            
 
                         });
                     }
@@ -183,7 +187,55 @@ impl ReceiverContext {
     }
 }
 
-fn speech_to_text(wav_48khz_1ch: &[i16]) -> anyhow::Result<String> {
+async fn speech_to_text(wav_48khz_1ch: &[i16]) -> anyhow::Result<String> {
 
-    Ok("".to_string())
+    let client = reqwest::Client::new();
+
+    let wavdata = make_wav_file(wav_48khz_1ch)?;
+
+    let multipart = Form::new();
+    let multipart = multipart.part("file", reqwest::multipart::Part::bytes(wavdata).file_name("audio.wav"));
+    let multipart = multipart.part("model", reqwest::multipart::Part::text("whisper-1"));
+
+    let response = client.post("https://api.openai.com/v1/audio/transcriptions")
+        .header("Authorization", format!("Bearer {}", std::env::var("OPENAI_API_KEY")?))
+        .header("Content-Type", "multipart/form-data")
+        .multipart(multipart)
+        .send()
+        .await?;
+
+    let response: TranscriptionResponse = response.json().await?;
+
+    Ok(response.text)
+}
+
+fn make_wav_file(wav_48khz_1ch: &[i16]) -> anyhow::Result<Vec<u8>> {
+    use hound::{WavSpec, WavWriter};
+
+    let spec = WavSpec {
+        channels: 1,
+        sample_rate: 48000,
+        bits_per_sample: 16,
+        sample_format: hound::SampleFormat::Int,
+    };
+
+    let mut buffer = Vec::new();
+
+    {
+        let mut writer = WavWriter::new(Cursor::new(&mut buffer), spec)?;
+
+        for &sample in wav_48khz_1ch {
+            writer.write_sample(sample)?;
+        }
+
+        writer.finalize()?; // WAVファイルをクローズして書き込みを完了する
+    }
+
+    Ok(buffer)
+}
+
+
+#[derive(Deserialize)]
+struct TranscriptionResponse {
+    text: String,
 }
