@@ -176,6 +176,8 @@ impl EventHandler for Receiver {
                                     assistant_history.push_as_assistant(&response);
                                 }
 
+                                let response_wav = text_to_speech(&response).await.unwrap();
+
                             });
                             
 
@@ -253,4 +255,31 @@ fn make_wav_file(wav_48khz_1ch: &[i16]) -> anyhow::Result<Vec<u8>> {
     }
 
     Ok(buffer)
+}
+
+async fn text_to_speech(text: &str) -> anyhow::Result<Vec<u8>> {
+
+    let client = reqwest::Client::new();
+
+    let response = client.post("http://127.0.0.1:50032/v1/synthesis")
+        .json(&serde_json::json!({
+            "speakerUuid": "3c37646f-3881-5374-2a83-149267990abc",
+            "styleId": 0,
+            "text": text,
+            "speedScale": 1.0,
+            "volumeScale": 1.0,
+            "prosodyDetail": [],
+            "pitchScale": 0.0,
+            "intonationScale": 1.0,
+            "prePhonemeLength": 0.1,
+            "postPhonemeLength": 0.5,
+            "outputSamplingRate": 24000,
+        }))
+        .header("Content-Type", "application/json")
+        .send()
+        .await?
+        .bytes()
+        .await?;
+
+    Ok(response.to_vec())
 }
