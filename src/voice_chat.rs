@@ -2,10 +2,11 @@ use std::{collections::HashMap, io::Cursor, num::NonZeroU64, sync::{Arc, Mutex}}
 
 use reqwest::{header, multipart::Form};
 use songbird::{CoreEvent, EventContext, EventHandler};
+use twilight_http::response;
 use twilight_model::http::interaction::{InteractionResponse, InteractionResponseData, InteractionResponseType};
 use vesper::{macros::command, prelude::{async_trait, DefaultCommandResult, SlashContext}};
 
-use crate::Context;
+use crate::{assistant, Context};
 
 #[command]
 #[description = "ボイスチャンネルに招待する"]
@@ -123,6 +124,7 @@ impl EventHandler for Receiver {
                         // tokioに渡す
                         let wav_by_user = receiver_context.wav_by_user.clone();
                         let user_id = *user_id;
+                        let assistant_history = receiver_context.assistant_history.clone();
 
                         tokio::spawn(async move{
 
@@ -161,7 +163,18 @@ impl EventHandler for Receiver {
                                 
                                 println!("{}: {}", user_id, recognized_text);
 
+                                let response = {
+                                        let mut assistant_history = assistant_history.lock().unwrap();
+                                        assistant_history.push_as_user(&recognized_text);
+                                        assistant_history.clone()
+                                    }
+                                    .get_with_system("かよわい女の子のような口調で返信してください。女の子の名前はミーシェです。女の子はご主人様と電話しています。")
+                                    .request("gpt-4o").await.unwrap();
 
+                                {
+                                    let mut assistant_history = assistant_history.lock().unwrap();
+                                    assistant_history.push_as_assistant(&response);
+                                }
 
                             });
                             
@@ -180,12 +193,14 @@ impl EventHandler for Receiver {
 
 struct ReceiverContext {
     wav_by_user: Arc<Mutex<HashMap<u32, Vec<i16>>>>,
+    assistant_history: Arc<Mutex<crate::llm::History>>,
 }
 
 impl ReceiverContext {
     fn new() -> Self {
         Self {
             wav_by_user: Arc::new(Mutex::new(HashMap::new())),
+            assistant_history: Arc::new(Mutex::new(crate::llm::History::new())),
         }
     }
 }
