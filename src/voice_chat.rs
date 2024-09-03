@@ -1,5 +1,6 @@
 use std::{collections::HashMap, io::Cursor, num::NonZeroU64, sync::{Arc, Mutex}};
 
+use hound::WavReader;
 use reqwest::{header, multipart::Form};
 use songbird::{id::GuildId, CoreEvent, EventContext, EventHandler};
 use twilight_model::http::interaction::{InteractionResponse, InteractionResponseData, InteractionResponseType};
@@ -125,6 +126,7 @@ impl EventHandler for Receiver {
                         let user_id = *user_id;
                         let assistant_history = receiver_context.assistant_history.clone();
                         let songbird = receiver_context.songbird.clone();
+                        let is_speaking = receiver_context.is_speaking.clone();
 
                         tokio::spawn(async move{
 
@@ -151,8 +153,21 @@ impl EventHandler for Receiver {
 
                             }
 
-                            // 指定秒後に同じ人がしゃべっていなかった場合、Whisperに音声データを渡す
-                            println!("{}: {}s", user_id, wav.len() / (2 * 48000));
+                            // 1秒未満の音声データは無視
+                            if wav.len() < 48000 * 2 {
+                                return;
+                            }
+
+                            // アシスタントがしゃべっている最中は、音声データを受け付けない
+                            let res = {
+                                let mut s = is_speaking.lock().unwrap();
+                                let is_speaking = *s;
+                                *s = true;
+                                is_speaking
+                            };
+                            if res {
+                                return;
+                            }
 
                             // 奇数番目だけ採用し、wavをモノラルに変換
                             let wav_mono: Vec<i16> = wav.into_iter().enumerate().filter_map(|(i, x)| if i % 2 == 0 { Some(x) } else { None }).collect();
@@ -184,8 +199,16 @@ impl EventHandler for Receiver {
                                 {
                                     let mut call = call.lock().await;
 
+                                    let secs = get_wav_duration_secs(&response_wav);
+
                                     let audio = response_wav.into();
                                     call.play_input(audio);
+
+                                    tokio::time::sleep(std::time::Duration::from_secs_f64(secs)).await;
+
+                                    let mut s = is_speaking.lock().unwrap();
+                                    *s = false;
+
                                 }
 
                             });
@@ -207,6 +230,7 @@ struct ReceiverContext {
     wav_by_user: Arc<Mutex<HashMap<u32, Vec<i16>>>>,
     assistant_history: Arc<Mutex<crate::llm::History>>,
     songbird: Arc<songbird::Songbird>,
+    is_speaking: Arc<Mutex<bool>>,
 }
 
 impl ReceiverContext {
@@ -214,7 +238,8 @@ impl ReceiverContext {
         Self {
             wav_by_user: Arc::new(Mutex::new(HashMap::new())),
             assistant_history: Arc::new(Mutex::new(crate::llm::History::new())),
-            songbird
+            songbird,
+            is_speaking: Arc::new(Mutex::new(false)),
         }
     }
 }
@@ -278,7 +303,7 @@ async fn text_to_speech(text: &str) -> anyhow::Result<Vec<u8>> {
             "speakerUuid": "3c37646f-3881-5374-2a83-149267990abc",
             "styleId": 0,
             "text": text,
-            "speedScale": 1.0,
+            "speedScale": 2.0,
             "volumeScale": 1.0,
             "prosodyDetail": [],
             "pitchScale": 0.0,
@@ -294,4 +319,14 @@ async fn text_to_speech(text: &str) -> anyhow::Result<Vec<u8>> {
         .await?;
 
     Ok(response.to_vec())
+}
+
+fn get_wav_duration_secs(wav_data: &[u8]) -> f64 {
+    let cursor = Cursor::new(wav_data);
+    let reader = WavReader::new(cursor).ok().unwrap();
+    let spec = reader.spec();
+    let duration = reader.duration();
+
+    // 秒数を計算 (サンプル数 / サンプルレート)
+    duration as f64 / spec.sample_rate as f64
 }
