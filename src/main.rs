@@ -13,6 +13,7 @@ mod assistant;
 mod ping;
 mod slot;
 mod dice;
+mod voice_chat;
 
 pub type Message = Box<MessageCreate>;
 pub struct Context{
@@ -64,6 +65,8 @@ async fn main() -> anyhow::Result<()> {
         .command(slot::kemoshumai_slot)
         .command(dice::dice)
         .command(dice::random)
+        .command(voice_chat::join)
+        .command(voice_chat::leave)
         .build()
     );
     framework.register_guild_commands(Id::new(env::var("GUILD_ID")?.parse()?)).await?;
