@@ -99,13 +99,6 @@ async fn handle_event(
     framework: Arc<Framework<Arc<Context>>>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
-
-    let songbird = Arc::clone(&context.songbird);
-    let e = event.clone();
-    tokio::spawn(async move {
-        songbird.process(&e).await;
-    });
-
     match event {
         Event::MessageCreate(msg) => {
 
