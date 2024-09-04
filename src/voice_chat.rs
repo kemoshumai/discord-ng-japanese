@@ -256,7 +256,9 @@ async fn speech_to_text(wav_48khz_1ch: &[i16]) -> anyhow::Result<String> {
 
     let client = reqwest::Client::new();
 
-    let wavdata = make_wav_file(wav_48khz_1ch)?;
+    let wav_48khz_1ch = normalize_audio(wav_48khz_1ch);
+
+    let wavdata = make_wav_file(&wav_48khz_1ch)?;
 
     let multipart = Form::new()
         .text("model", "whisper-1")
@@ -339,4 +341,10 @@ fn get_wav_duration_secs(wav_data: &[u8]) -> f64 {
 
     // 秒数を計算 (サンプル数 / サンプルレート)
     duration as f64 / spec.sample_rate as f64
+}
+
+fn normalize_audio(samples: &[i16]) -> Vec<i16> {
+    let max_sample = samples.iter().map(|&s| s.abs()).max().unwrap_or(1) as f32;
+    let factor = 32767.0 / max_sample;
+    samples.iter().map(|&s| (s as f32 * factor).round() as i16).collect()
 }
