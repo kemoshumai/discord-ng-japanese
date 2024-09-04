@@ -196,7 +196,8 @@ impl EventHandler for Receiver {
                                 let guild_id: NonZeroU64 = std::env::var("GUILD_ID").expect("Expected a guild ID in the environment").parse().expect("Guild ID is not a number");
                                 let guild_id = GuildId::from(guild_id);
                                 let call = songbird.get(guild_id).unwrap();
-                                {
+                                
+                                let secs = {
                                     let mut call = call.lock().await;
 
                                     let secs = get_wav_duration_secs(&response_wav);
@@ -204,11 +205,18 @@ impl EventHandler for Receiver {
                                     let audio = response_wav.into();
                                     call.play_input(audio);
 
-                                    tokio::time::sleep(std::time::Duration::from_secs_f64(secs)).await;
+                                    secs
+                                };
 
+                                tracing::info!("Playing audio for {} seconds", secs);
+                                tokio::time::sleep(std::time::Duration::from_secs_f64(secs)).await;
+                                tracing::info!("Returned from audio playing!");
+
+                                {
+                                    tracing::info!("Assistant is not speaking anymore");
                                     let mut s = is_speaking.lock().unwrap();
                                     *s = false;
-
+                                    tracing::info!("Now is_speaking is {}", *s);
                                 }
 
                             });
