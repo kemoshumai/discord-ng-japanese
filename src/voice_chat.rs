@@ -183,7 +183,7 @@ impl EventHandler for Receiver {
                                         assistant_history.push_as_user(&recognized_text);
                                         assistant_history.clone()
                                     }
-                                    .get_with_system("かよわい女の子のような口調で返信してください。女の子の名前はミーシェです。女の子はご主人様と電話しています。")
+                                    .get_with_system("かよわい女の子のような口調で返信してください。女の子の名前はミーシェです。女の子はご主人様と電話しています。電話だから、返答も短めにね。")
                                     .request("gpt-4o").await.unwrap();
 
                                 {

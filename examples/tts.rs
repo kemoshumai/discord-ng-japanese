@@ -7,7 +7,7 @@ async fn main() -> anyhow::Result<()>{
 
     tracing::info!("TTS Started");
 
-    let speech = text_to_speech("こんにちは").await?;
+    let _speech = text_to_speech("こんにちは").await?;
 
     tracing::info!("TTS Finished");
 
