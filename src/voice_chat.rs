@@ -298,7 +298,9 @@ async fn text_to_speech(text: &str) -> anyhow::Result<Vec<u8>> {
 
     let client = reqwest::Client::new();
 
-    let response = client.post("http://127.0.0.1:50032/v1/predict")
+    let url = std::env::var("COEIRO_API_URL")?;
+
+    let response = client.post(url)
         .json(&serde_json::json!({
             "speakerUuid": "292ea286-3d5f-f1cc-157c-66462a6a9d08",
             "styleId": 42,
