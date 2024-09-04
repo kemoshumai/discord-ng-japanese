@@ -300,14 +300,14 @@ async fn text_to_speech(text: &str) -> anyhow::Result<Vec<u8>> {
 
     let response = client.post("http://127.0.0.1:50032/v1/synthesis")
         .json(&serde_json::json!({
-            "speakerUuid": "3c37646f-3881-5374-2a83-149267990abc",
-            "styleId": 0,
+            "speakerUuid": "292ea286-3d5f-f1cc-157c-66462a6a9d08",
+            "styleId": 42,
             "text": text,
-            "speedScale": 2.0,
+            "speedScale": 1.2,
             "volumeScale": 1.0,
             "prosodyDetail": [],
             "pitchScale": 0.0,
-            "intonationScale": 1.0,
+            "intonationScale": 1.2,
             "prePhonemeLength": 0.1,
             "postPhonemeLength": 0.5,
             "outputSamplingRate": 24000,
