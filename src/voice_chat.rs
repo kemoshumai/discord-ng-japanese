@@ -43,6 +43,8 @@ pub async fn join(ctx: &mut SlashContext<Arc<Context>>) -> DefaultCommandResult 
     
         let receiver = Receiver::new(songbird);
 
+        handler.remove_all_global_events();
+
         handler.add_global_event(CoreEvent::SpeakingStateUpdate.into(), receiver.clone());
         handler.add_global_event(CoreEvent::VoiceTick.into(), receiver.clone());
     });
@@ -56,6 +58,10 @@ pub async fn leave(ctx: &mut SlashContext<Arc<Context>>) -> DefaultCommandResult
 
     let guild_id = ctx.interaction.guild_id.unwrap();
     ctx.data.songbird.leave(guild_id).await?;
+
+    let handler = ctx.data.songbird.get(guild_id).unwrap();
+    let mut handler = handler.lock().await;
+    handler.remove_all_global_events();
 
     ctx.interaction_client.create_response(
         ctx.interaction.id,
@@ -79,9 +85,16 @@ struct Receiver{
 
 impl Receiver {
     fn new(songbird: Arc<songbird::Songbird>) -> Self {
+        tracing::info!("Receiver spawned!");
         Self {
             inner: Arc::new(ReceiverContext::new(songbird))
         }
+    }
+}
+
+impl Drop for Receiver {
+    fn drop(&mut self) {
+        tracing::info!("Receiver dropped!");
     }
 }
 
