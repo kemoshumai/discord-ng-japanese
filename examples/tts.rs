@@ -18,7 +18,7 @@ async fn text_to_speech(text: &str) -> anyhow::Result<Vec<u8>> {
 
     let client = reqwest::Client::new();
 
-    let url = std::env::var("COEIRO_API_URL")?;
+    let url = std::env::var("")?;
 
     let response = client.post(url)
         .json(&serde_json::json!({
