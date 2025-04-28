@@ -10,6 +10,12 @@ pub async fn assistant(http: &twilight_http::Client, ctx: &Context, msg: &Messag
     let mut history = ctx.history.lock().await;
 
     let channel_id = std::env::var("CHANNEL_ID_ASSISTANT").expect("Expected a channel ID in the environment");
+
+    // IDが数字でない場合は機能を無視
+    if channel_id.parse::<u64>().is_err() {
+        return Ok(());
+    }
+
     let channel_id: u64 = channel_id.parse().expect("Channel ID is not a number");
 
     let bot_role_id = env::var("BOT_ROLE_ID").expect("Expected a bot user ID in the environment");

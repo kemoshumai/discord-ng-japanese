@@ -3,6 +3,12 @@ use crate::{Context, Message};
 pub async fn ng_japanese(http: &twilight_http::Client, _ctx: &Context, msg: &Message) -> anyhow::Result<()>{
 
     let channel_id_ng_japanese = std::env::var("CHANNEL_ID_NG_JAPANESE").expect("Expected a channel ID in the environment");
+
+    // IDが数字でない場合は機能を無視
+    if channel_id_ng_japanese.parse::<u64>().is_err() {
+        return Ok(());
+    }
+
     let channel_id_ng_japanese: u64 = channel_id_ng_japanese.parse().expect("Channel ID is not a number");
 
     // 日本語禁止チャンネル以外は無視
