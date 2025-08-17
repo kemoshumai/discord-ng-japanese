@@ -14,6 +14,7 @@ mod ping;
 mod slot;
 mod dice;
 mod voice_chat;
+mod role;
 
 pub type Message = Box<MessageCreate>;
 pub struct Context{
@@ -70,6 +71,7 @@ async fn main() -> anyhow::Result<()> {
         .command(dice::random)
         .command(voice_chat::join)
         .command(voice_chat::leave)
+        .command(role::role_nsfw)
         .build()
     );
     framework.register_guild_commands(Id::new(env::var("GUILD_ID")?.parse()?)).await?;
