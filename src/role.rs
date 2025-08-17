@@ -18,7 +18,7 @@ pub async fn role_nsfw(ctx: &mut SlashContext<Arc<Context>>,
             &InteractionResponse {
                 kind: InteractionResponseType::ChannelMessageWithSource,
                 data: Some(InteractionResponseData {
-                    content: Some("そんなはした金でNSFWロールが貰えると思ってるの？ ざーこ".to_string()),
+                    content: Some(format!("{}円とか、そんなはした金でNSFWロールが貰えると思ってるの？ ざーこ", n).to_string()),
                     ..Default::default()
                 })
             }
@@ -30,7 +30,7 @@ pub async fn role_nsfw(ctx: &mut SlashContext<Arc<Context>>,
             &InteractionResponse {
                 kind: InteractionResponseType::ChannelMessageWithSource,
                 data: Some(InteractionResponseData {
-                    content: Some(format!("{}？！しょ、しょうがないな～... ミーシェがNSFWロール、あげるねっ", n).to_string()),
+                    content: Some(format!("{}円？！しょ、しょうがないな～... ミーシェがNSFWロール、あげるねっ", n).to_string()),
                     ..Default::default()
                 })
             }
