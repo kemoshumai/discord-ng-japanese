@@ -7,25 +7,23 @@ use twilight_gateway::{Event, Intents, Shard, ShardId};
 use twilight_model::{gateway::payload::incoming::MessageCreate, id::Id};
 use vesper::prelude::Framework;
 
-mod ng_japanese;
-mod llm;
 mod assistant;
-mod ping;
-mod slot;
 mod dice;
-mod voice_chat;
+mod llm;
+mod ng_japanese;
+mod ping;
 mod role;
+mod slot;
+mod voice_chat;
 
 pub type Message = Box<MessageCreate>;
-pub struct Context{
+pub struct Context {
     pub history: Arc<Mutex<llm::History>>,
     pub songbird: Arc<Songbird>,
 }
 
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-
     dotenvy::dotenv().ok();
 
     tracing_subscriber::fmt::init();
@@ -46,7 +44,7 @@ async fn main() -> anyhow::Result<()> {
 
     let shard_hashmap = {
         let mut map = HashMap::new();
-        map.insert(shard.id().number(),shard.sender());
+        map.insert(shard.id().number(), shard.sender());
         map
     };
 
@@ -62,22 +60,25 @@ async fn main() -> anyhow::Result<()> {
     });
 
     let application_id = Id::new(env::var("APPLICATION_ID")?.parse()?);
-    let framework = Arc::new(Framework::builder(http.clone(), application_id, context.clone())
-        .command(ping::ping)
-        .command(assistant::reset)
-        .command(assistant::rollup)
-        .command(slot::kemoshumai_slot)
-        .command(dice::dice)
-        .command(dice::random)
-        .command(voice_chat::join)
-        .command(voice_chat::leave)
-        .command(role::role_nsfw)
-        .build()
+    let framework = Arc::new(
+        Framework::builder(http.clone(), application_id, context.clone())
+            .command(ping::ping)
+            .command(assistant::reset)
+            .command(assistant::rollup)
+            .command(slot::kemoshumai_slot)
+            .command(dice::dice)
+            .command(dice::random)
+            .command(voice_chat::join)
+            .command(voice_chat::leave)
+            .command(role::role_nsfw)
+            .build(),
     );
-    framework.register_guild_commands(Id::new(env::var("GUILD_ID")?.parse()?)).await?;
+    framework
+        .register_guild_commands(Id::new(env::var("GUILD_ID")?.parse()?))
+        .await?;
 
     // Process each event as they come in.
-    loop{
+    loop {
         let item = shard.next_event().await;
         let Ok(event) = item else {
             tracing::warn!(source = ?item.unwrap_err(), "error receiving event");
@@ -90,7 +91,12 @@ async fn main() -> anyhow::Result<()> {
         // Update the cache with the event.
         cache.update(&event);
 
-        tokio::spawn(handle_event(event, Arc::clone(&http), Arc::clone(&context), Arc::clone(&framework)));
+        tokio::spawn(handle_event(
+            event,
+            Arc::clone(&http),
+            Arc::clone(&context),
+            Arc::clone(&framework),
+        ));
     }
 }
 
@@ -100,21 +106,18 @@ async fn handle_event(
     context: Arc<Context>,
     framework: Arc<Framework<Arc<Context>>>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-
     match event {
         Event::MessageCreate(msg) => {
-
             ping::ping_message(&http, &context, &msg).await?;
             ng_japanese::ng_japanese(&http, &context, &msg).await?;
             assistant::assistant(&http, &context, &msg).await?;
-
-        },
+        }
         Event::InteractionCreate(i) => {
             tokio::spawn(async move {
                 let inner = i.0;
                 framework.process(inner).await;
             });
-        },
+        }
         _ => (),
     }
 

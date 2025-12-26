@@ -1,5 +1,9 @@
 use anyhow::Result;
-use async_openai::types::{ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage, ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
+use async_openai::types::{
+    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage,
+    ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs,
+    CreateChatCompletionRequestArgs,
+};
 
 #[derive(Clone, Default, Debug)]
 pub struct History(Vec<ChatCompletionRequestMessage>);
@@ -19,7 +23,7 @@ impl History {
                 .content(content)
                 .build()
                 .unwrap()
-                .into()
+                .into(),
         );
     }
 
@@ -29,7 +33,7 @@ impl History {
                 .content(content)
                 .build()
                 .unwrap()
-                .into()
+                .into(),
         );
     }
 
@@ -39,23 +43,23 @@ impl History {
                 .content(content)
                 .build()
                 .unwrap()
-                .into()
+                .into(),
         );
     }
 
-    pub fn get_with_user(&self, content: &str) -> Self{
+    pub fn get_with_user(&self, content: &str) -> Self {
         let mut history = self.clone();
         history.push_as_user(content);
         history
     }
 
-    pub fn get_with_assistant(&self, content: &str) -> Self{
+    pub fn get_with_assistant(&self, content: &str) -> Self {
         let mut history = self.clone();
         history.push_as_assistant(content);
         history
     }
 
-    pub fn get_with_system(&self, content: &str) -> Self{
+    pub fn get_with_system(&self, content: &str) -> Self {
         let mut history = self.clone();
         history.push_as_system(content);
         history
@@ -71,12 +75,12 @@ impl History {
 
     pub async fn request_mut(&mut self, model: &str) -> Result<String> {
         let response_in_text = self.request(model).await?;
-    
+
         self.push_as_assistant(response_in_text.as_str());
-    
+
         Ok(response_in_text)
     }
-    
+
     pub async fn request(&self, model: &str) -> Result<String> {
         let client = async_openai::Client::new();
 
@@ -84,11 +88,18 @@ impl History {
             .model(model)
             .messages(self.get_messages())
             .build()?;
-    
+
         let response = client.chat().create(request).await?;
-    
-        let response_in_text = response.choices.first().unwrap().message.content.clone().unwrap_or_default();
-    
+
+        let response_in_text = response
+            .choices
+            .first()
+            .unwrap()
+            .message
+            .content
+            .clone()
+            .unwrap_or_default();
+
         Ok(response_in_text)
     }
 
@@ -103,5 +114,4 @@ impl History {
         history.0 = history.0[start..].to_vec();
         Ok(())
     }
-
 }

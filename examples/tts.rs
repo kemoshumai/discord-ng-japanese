@@ -1,6 +1,5 @@
 #[tokio::main]
-async fn main() -> anyhow::Result<()>{
-
+async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
 
     tracing_subscriber::fmt::init();
@@ -15,13 +14,13 @@ async fn main() -> anyhow::Result<()>{
 }
 
 async fn text_to_speech(text: &str) -> anyhow::Result<Vec<u8>> {
-
-    let client = reqwest::ClientBuilder::new().connect_timeout(std::time::Duration::from_millis(500)).build()?;
+    let client = reqwest::ClientBuilder::new()
+        .connect_timeout(std::time::Duration::from_millis(500))
+        .build()?;
 
     let urls = std::env::var("COEIRO_API_URLS")?;
 
     for url in urls.lines() {
-
         let is_ok = client.get(url).send().await.is_ok();
 
         if !is_ok {
@@ -30,7 +29,8 @@ async fn text_to_speech(text: &str) -> anyhow::Result<Vec<u8>> {
 
         println!("URL: {}", url);
 
-        let response = client.post(format!("{}v1/predict", url))
+        let response = client
+            .post(format!("{}v1/predict", url))
             .json(&serde_json::json!({
                 "speakerUuid": "292ea286-3d5f-f1cc-157c-66462a6a9d08",
                 "styleId": 42,
@@ -51,9 +51,7 @@ async fn text_to_speech(text: &str) -> anyhow::Result<Vec<u8>> {
             .await?;
 
         return Ok(response.to_vec());
-
-    };
+    }
 
     anyhow::bail!("All Coeiro API URLs are down");
-    
 }
