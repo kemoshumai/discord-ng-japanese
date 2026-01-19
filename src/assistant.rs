@@ -42,6 +42,11 @@ pub async fn assistant(
         return Ok(());
     }
 
+    // botには返事しない
+    if msg.author.bot {
+        return Ok(());
+    }
+
     // 「.」から始まるメッセージは無視
     if msg.content.starts_with('.') {
         return Ok(());
