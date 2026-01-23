@@ -15,6 +15,7 @@ mod ping;
 mod role;
 mod slot;
 mod voice_chat;
+mod x_derby;
 
 pub type Message = Box<MessageCreate>;
 pub struct Context {
