@@ -1,23 +1,4 @@
-use std::sync::Arc;
-
-use anyhow::Ok;
-use songbird::Songbird;
-use tokio::sync::Mutex;
-use twilight_model::gateway::payload::incoming::MessageCreate;
-
-use crate::discord_loop::run_discord_event_loop_with_dotenv;
-
-mod actors;
-mod assistant;
-mod discord_loop;
-mod llm;
-mod voice_chat;
-
-pub type Message = Box<MessageCreate>;
-pub struct Context {
-    pub history: Arc<Mutex<llm::History>>,
-    pub songbird: Arc<Songbird>,
-}
+use discord_ng_japanese::discord_loop::run_discord_event_loop_with_dotenv;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -17,11 +17,11 @@ use vesper::{
     prelude::{async_trait, DefaultCommandResult, SlashContext},
 };
 
-use crate::Context;
+use crate::discord_loop::FrameworkContext;
 
 #[command]
 #[description = "ボイスチャンネルに招待する"]
-pub async fn join(ctx: &mut SlashContext<Arc<Context>>) -> DefaultCommandResult {
+pub async fn join(ctx: &mut SlashContext<Arc<FrameworkContext>>) -> DefaultCommandResult {
     let guild_id = ctx
         .interaction
         .guild_id

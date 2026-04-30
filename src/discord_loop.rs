@@ -12,6 +12,7 @@ mod role;
 mod slot;
 
 pub struct FrameworkContext {
+    #[allow(dead_code)]
     songbird: Arc<Songbird>,
 }
 
