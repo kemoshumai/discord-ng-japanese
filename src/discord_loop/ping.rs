@@ -5,14 +5,14 @@ use twilight_model::http::interaction::{
 };
 use vesper::{
     macros::command,
-    prelude::{DefaultCommandResult, SlashContext},
+    prelude::{DefaultCommandResult, Framework, SlashContext},
 };
 
-use crate::{Context, Message};
+use crate::{discord_loop::FrameworkContext, Message};
 
 pub async fn ping_message(
     http: &twilight_http::Client,
-    _ctx: &Context,
+    _framework: &Arc<Framework<Arc<FrameworkContext>>>,
     msg: &Message,
 ) -> anyhow::Result<()> {
     if msg.content == "!ping" {
@@ -28,7 +28,7 @@ pub async fn ping_message(
 
 #[command]
 #[description = "ping"]
-pub async fn ping(ctx: &mut SlashContext<Arc<Context>>) -> DefaultCommandResult {
+pub async fn ping(ctx: &mut SlashContext<Arc<FrameworkContext>>) -> DefaultCommandResult {
     ctx.interaction_client
         .create_response(
             ctx.interaction.id,

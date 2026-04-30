@@ -9,12 +9,12 @@ use vesper::{
     prelude::{DefaultCommandResult, SlashContext},
 };
 
-use crate::Context;
+use crate::discord_loop::FrameworkContext;
 
 #[command]
 #[description = "さいころを振る"]
 pub async fn dice(
-    ctx: &mut SlashContext<Arc<Context>>,
+    ctx: &mut SlashContext<Arc<FrameworkContext>>,
     #[description = "さいころの目の数の個数"] dice_1d: u8,
 ) -> DefaultCommandResult {
     let n = rand::thread_rng().gen_range(1..=dice_1d);
@@ -39,7 +39,7 @@ pub async fn dice(
 #[command]
 #[description = "ランダムに選択する"]
 pub async fn random(
-    ctx: &mut SlashContext<Arc<Context>>,
+    ctx: &mut SlashContext<Arc<FrameworkContext>>,
     #[description = "選択肢（コンマ区切り）"] elements_separated_by_comma: String,
 ) -> DefaultCommandResult {
     let elements: Vec<&str> = elements_separated_by_comma.split(',').collect();

@@ -9,11 +9,13 @@ use vesper::{
     prelude::{DefaultCommandResult, SlashContext},
 };
 
-use crate::Context;
+use crate::discord_loop::FrameworkContext;
 
 #[command]
 #[description = "けもシューマイの亜種を運試しする"]
-pub async fn kemoshumai_slot(ctx: &mut SlashContext<Arc<Context>>) -> DefaultCommandResult {
+pub async fn kemoshumai_slot(
+    ctx: &mut SlashContext<Arc<FrameworkContext>>,
+) -> DefaultCommandResult {
     let kemoshumai = make_kemoshumai_random();
 
     ctx.interaction_client

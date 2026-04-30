@@ -1,8 +1,12 @@
-use crate::{Context, Message};
+use std::sync::Arc;
+
+use vesper::prelude::Framework;
+
+use crate::{discord_loop::FrameworkContext, Message};
 
 pub async fn ng_japanese(
     http: &twilight_http::Client,
-    _ctx: &Context,
+    _framework: &Arc<Framework<Arc<FrameworkContext>>>,
     msg: &Message,
 ) -> anyhow::Result<()> {
     let channel_id_ng_japanese =

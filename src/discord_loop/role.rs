@@ -8,12 +8,12 @@ use vesper::{
     prelude::{DefaultCommandResult, SlashContext},
 };
 
-use crate::Context;
+use crate::discord_loop::FrameworkContext;
 
 #[command]
 #[description = "ミーシェにNSFWロールをおねだりする"]
 pub async fn role_nsfw(
-    ctx: &mut SlashContext<Arc<Context>>,
+    ctx: &mut SlashContext<Arc<FrameworkContext>>,
     #[description = "ミーシェに渡すお金（円）"] n: u32,
 ) -> DefaultCommandResult {
     if n < 1000000 {
