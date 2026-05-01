@@ -3,8 +3,12 @@ use kameo::actor::Spawn;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    dotenvy::dotenv().ok();
+
+    tracing_subscriber::fmt::init();
+
     // LlmRouterActorをスポーンしてみる
-    let actor = GeminiActor::spawn(GeminiActor::new_with_env());
+    let actor = GeminiActor::spawn(GeminiActor::new_with_env()?);
 
     // メッセージを渡す
     let response = actor.ask(LlmRequest {
